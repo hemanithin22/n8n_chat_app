@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI Tools Webhook Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        display: ["Inter"],
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+
+<body class="bg-background-dark font-display text-gray-200">
+    <div class="relative flex h-auto min-h-screen w-full flex-col">
+        <div class="flex h-full grow flex-col">
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-primary/30 px-6 sm:px-10 py-4">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-lg font-bold text-white">N8N AI CHAT</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <nav class="flex items-center gap-6">
+                        <a class="text-sm font-medium text-gray-300 hover:text-primary transition-colors" href="{{ url_for('chat_interface') }}">Chat</a>
+                        <a class="text-sm font-medium text-primary" href="{{ url_for('webhook_management') }}">Settings</a>
+                    </nav>
+                    <div class="flex items-center gap-3 border-l border-slate-700 pl-6">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-primary" viewBox="0 0 256 256"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path></svg>
+                            <span class="text-sm font-medium text-white">{{ session.username }}</span>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="text-sm text-gray-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"></path></svg>
+                        </a>
+                    </div>
+                </div>
+            </header>
+            <main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+                <div class="w-full max-w-4xl">
+                    <div class="mb-8">
+                        <h1 class="text-3xl font-bold tracking-tight text-white">Manage Webhooks</h1>
+                        <p class="mt-1 text-sm text-gray-400">Add, update, or delete webhook URLs for your chat bots.</p>
+                    </div>
+
+                    <!-- Notification Area -->
+                    <div id="notification" class="hidden rounded-md p-4 mb-6 text-sm"></div>
+
+                    <!-- Webhook Form -->
+                    <div class="bg-gray-800/20 rounded-lg shadow-sm border border-gray-700/50 p-6 mb-8">
+                        <h2 class="text-lg font-semibold text-white mb-4">Add New Webhook</h2>
+                        <form id="webhook-form" class="flex flex-col gap-4">
+                            <div class="w-full">
+                                <label for="webhook-name" class="block text-sm font-medium text-gray-300 mb-2">Webhook Name</label>
+                                <input id="webhook-name" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="e.g., Customer Support Bot" />
+                            </div>
+                            <div class="w-full">
+                                <label for="webhook-url" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
+                                <input id="webhook-url" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="https://example.com/webhook-endpoint" />
+                            </div>
+                            <button type="submit" class="flex w-full sm:w-auto items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
+                                <span class="material-symbols-outlined mr-2 text-base">add</span>
+                                <span>Add Webhook</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Existing Webhooks List -->
+                    <div>
+                        <h2 class="text-xl font-bold text-white mb-4">Your Webhooks</h2>
+                        <div id="webhooks-list" class="space-y-4">
+                            <div class="text-center text-gray-400 p-6">Loading webhooks...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Modal -->
+                    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                            <h3 class="text-xl font-bold text-white mb-4">Edit Webhook</h3>
+                            <form id="edit-form">
+                                <input type="hidden" id="edit-webhook-id">
+                                <div class="mb-4">
+                                    <label for="edit-webhook-name" class="block text-sm font-medium text-gray-300 mb-2">Webhook Name</label>
+                                    <input id="edit-webhook-name" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" />
+                                </div>
+                                <div class="mb-4">
+                                    <label for="edit-webhook-url" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
+                                    <input id="edit-webhook-url" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" />
+                                </div>
+                                <div class="flex gap-3 justify-end">
+                                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors">Cancel</button>
+                                    <button type="submit" class="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
+                                        <span>Save Changes</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const webhookForm = document.getElementById('webhook-form');
+            const webhookNameInput = document.getElementById('webhook-name');
+            const webhookUrlInput = document.getElementById('webhook-url');
+            const webhooksList = document.getElementById('webhooks-list');
+            const notification = document.getElementById('notification');
+            const editModal = document.getElementById('edit-modal');
+            const editForm = document.getElementById('edit-form');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+            // --- Function to show notifications ---
+            function showNotification(message, isError = false) {
+                notification.textContent = message;
+                notification.className = `rounded-md p-4 mb-6 text-sm ${isError ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`;
+                notification.classList.remove('hidden');
+                setTimeout(() => notification.classList.add('hidden'), 5000);
+            }
+
+            // --- Function to render webhooks list ---
+            function renderWebhooks(webhooks) {
+                if (!webhooks || webhooks.length === 0) {
+                    webhooksList.innerHTML = '<div class="text-center text-gray-400 p-6 bg-gray-800/20 rounded-lg border border-gray-700/50">No webhooks configured yet.</div>';
+                    return;
+                }
+
+                webhooksList.innerHTML = webhooks.map(webhook => `
+                    <div class="bg-gray-800/20 rounded-lg border border-gray-700/50 p-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-lg font-semibold text-white mb-2">${escapeHtml(webhook.name)}</h3>
+                                <code class="text-sm text-gray-400 break-all">${escapeHtml(webhook.url)}</code>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <button onclick="editWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-blue-400 hover:bg-blue-500/20 transition-colors">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                    <span>Edit</span>
+                                </button>
+                                <button onclick="deleteWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/20 transition-colors">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // --- Function to escape HTML ---
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
+            }
+
+            // --- Fetch and display all webhooks ---
+            async function fetchWebhooks() {
+                try {
+                    const response = await fetch('/api/webhooks');
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderWebhooks(data.webhooks);
+                    } else {
+                        webhooksList.innerHTML = '<div class="text-center text-red-400 p-6">Error loading webhooks.</div>';
+                    }
+                } catch (error) {
+                    webhooksList.innerHTML = '<div class="text-center text-red-400 p-6">Error loading webhooks.</div>';
+                    console.error('Fetch error:', error);
+                }
+            }
+
+            // --- Handle form submission (Add Webhook) ---
+            webhookForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = webhookNameInput.value.trim();
+                const url = webhookUrlInput.value.trim();
+                
+                if (!name || !url) {
+                    showNotification('Both name and URL are required.', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/webhooks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, url })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        showNotification('Webhook added successfully!');
+                        webhookNameInput.value = '';
+                        webhookUrlInput.value = '';
+                        fetchWebhooks();
+                    } else {
+                        showNotification(data.error || 'Failed to add webhook.', true);
+                    }
+                } catch (error) {
+                    showNotification('An unexpected server error occurred.', true);
+                }
+            });
+
+            // --- Global functions for edit and delete ---
+            window.editWebhook = async (webhookId) => {
+                try {
+                    const response = await fetch('/api/webhooks');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const webhook = data.webhooks.find(w => w.id === webhookId);
+                        if (webhook) {
+                            document.getElementById('edit-webhook-id').value = webhook.id;
+                            document.getElementById('edit-webhook-name').value = webhook.name;
+                            document.getElementById('edit-webhook-url').value = webhook.url;
+                            editModal.classList.remove('hidden');
+                        }
+                    }
+                } catch (error) {
+                    showNotification('Failed to load webhook details.', true);
+                }
+            };
+
+            window.deleteWebhook = async (webhookId) => {
+                if (confirm('Are you sure you want to delete this webhook?')) {
+                    try {
+                        const response = await fetch(`/api/webhooks/${webhookId}`, {
+                            method: 'DELETE'
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            showNotification('Webhook deleted successfully!');
+                            fetchWebhooks();
+                        } else {
+                            showNotification(data.error || 'Failed to delete webhook.', true);
+                        }
+                    } catch (error) {
+                        showNotification('An unexpected server error occurred.', true);
+                    }
+                }
+            };
+
+            // --- Handle edit form submission ---
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const webhookId = document.getElementById('edit-webhook-id').value;
+                const name = document.getElementById('edit-webhook-name').value.trim();
+                const url = document.getElementById('edit-webhook-url').value.trim();
+                
+                if (!name || !url) {
+                    showNotification('Both name and URL are required.', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/webhooks/${webhookId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, url })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        showNotification('Webhook updated successfully!');
+                        editModal.classList.add('hidden');
+                        fetchWebhooks();
+                    } else {
+                        showNotification(data.error || 'Failed to update webhook.', true);
+                    }
+                } catch (error) {
+                    showNotification('An unexpected server error occurred.', true);
+                }
+            });
+
+            // --- Cancel edit ---
+            cancelEditBtn.addEventListener('click', () => {
+                editModal.classList.add('hidden');
+            });
+
+            // Close modal on outside click
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) {
+                    editModal.classList.add('hidden');
+                }
+            });
+
+            // Initial fetch when the page loads
+            fetchWebhooks();
+        });
+    </script>
+</body>
+</html>

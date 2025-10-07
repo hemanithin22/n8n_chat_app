@@ -1,0 +1,9 @@
+{
+    "webhooks": [
+        {
+            "id": "eacc1407-921b-47c6-ad77-230d48315070",
+            "name": "Storable-class ai",
+            "url": "http://192.168.64.5:5678/webhook/a48ecf53-1dd3-4c14-b786-a8dc8c250595"
+        }
+    ]
+}

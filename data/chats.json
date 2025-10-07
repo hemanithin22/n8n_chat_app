@@ -1,0 +1,60 @@
+{
+    "chats": [
+        {
+            "id": "70bdc03c-d506-49c8-a17d-94f25c45b6b4",
+            "user_id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
+            "session_id": "a9fb7ea4-af55-465d-8e48-3572b8a4d9e3",
+            "title": "New Chat",
+            "created_at": "2025-10-07T18:14:38.697259",
+            "updated_at": "2025-10-07T18:14:45.683801"
+        },
+        {
+            "id": "de9c9ac2-853c-48a6-8568-d50f14999f07",
+            "user_id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
+            "session_id": "2da7deb3-ed9d-4054-a4aa-bef2d07bda6d",
+            "title": "Chat 2",
+            "created_at": "2025-10-07T18:19:39.228114",
+            "updated_at": "2025-10-07T18:21:28.467685"
+        },
+        {
+            "id": "b0639e9e-8665-4ef2-91e8-c5a05c4c2efc",
+            "user_id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
+            "session_id": "dfd6d5e6-a2b5-403d-8c6f-665083cb32cb",
+            "title": "New Chat",
+            "created_at": "2025-10-07T18:20:29.744679",
+            "updated_at": "2025-10-07T20:14:53.277560"
+        },
+        {
+            "id": "f2ad9a5b-0527-4af4-af7d-bb74074a02a2",
+            "user_id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
+            "session_id": "cf4dd6dd-5957-4e5d-ae14-df8592753d37",
+            "title": "Chat 2",
+            "created_at": "2025-10-07T19:52:34.249071",
+            "updated_at": "2025-10-07T19:53:41.799946"
+        },
+        {
+            "id": "1f073fa2-5135-4091-9bbe-050a274b0fa2",
+            "user_id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
+            "session_id": "046a2bb3-4f12-44c1-8497-189b5a09d1d9",
+            "title": "Chat 3",
+            "created_at": "2025-10-07T19:52:34.749489",
+            "updated_at": "2025-10-07T19:52:40.276353"
+        },
+        {
+            "id": "d348e7c0-cdc9-408a-bfe7-7b9b325c46fa",
+            "user_id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
+            "session_id": "2d0052be-fe12-4bd8-933c-3ba65ca47ed1",
+            "title": "Chat 4",
+            "created_at": "2025-10-07T19:52:34.950667",
+            "updated_at": "2025-10-07T19:52:34.950790"
+        },
+        {
+            "id": "6e5288b9-8470-4639-9962-84caee633b6a",
+            "user_id": "be2334c5-7a56-4d93-aee3-d01c81477beb",
+            "session_id": "6dea31c0-ab5e-45f3-ba3b-34ebf4d7dab6",
+            "title": "New Chat",
+            "created_at": "2025-10-07T19:53:58.014143",
+            "updated_at": "2025-10-07T19:53:58.014175"
+        }
+    ]
+}

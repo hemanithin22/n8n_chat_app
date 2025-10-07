@@ -1,0 +1,28 @@
+{
+    "users": [
+        {
+            "id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
+            "username": "nithin",
+            "created_at": "2025-10-07T16:39:11.603918",
+            "last_login": "2025-10-07T19:54:03.380070"
+        },
+        {
+            "id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
+            "username": "ranjith",
+            "created_at": "2025-10-07T16:39:33.040799",
+            "last_login": "2025-10-07T19:54:16.898215"
+        },
+        {
+            "id": "a789048b-6587-4994-a1c2-5049004e3e40",
+            "username": "Srivishag",
+            "created_at": "2025-10-07T16:40:30.885636",
+            "last_login": "2025-10-07T16:41:27.658903"
+        },
+        {
+            "id": "be2334c5-7a56-4d93-aee3-d01c81477beb",
+            "username": "rexnith",
+            "created_at": "2025-10-07T19:53:58.010774",
+            "last_login": "2025-10-07T19:53:58.010808"
+        }
+    ]
+}
