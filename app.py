@@ -159,10 +159,13 @@ def create_new_chat(user_id, title=None):
     # Generate a new session_id for this chat
     session_id = str(uuid.uuid4())
     
-    # If no title provided, generate one
+    # If no title provided, generate one with date and time
     if not title:
         user_chats_count = len(get_user_chats(user_id))
-        title = f"Chat {user_chats_count + 1}"
+        now = datetime.now()
+        # Format: Chat-1 (Jan 7, 22:30)
+        formatted_date = now.strftime("%b %-d, %H:%M") if os.name != 'nt' else now.strftime("%b %d, %H:%M").replace(" 0", " ")
+        title = f"Chat-{user_chats_count + 1} ({formatted_date})"
     
     new_chat = {
         "id": str(uuid.uuid4()),
@@ -250,7 +253,7 @@ def login():
     user_chats = get_user_chats(user.get('id'))
     if not user_chats:
         # Create a default chat for new users
-        default_chat = create_new_chat(user.get('id'), "New Chat")
+        default_chat = create_new_chat(user.get('id'))
         session['chat_id'] = default_chat['id']
         session['session_id'] = default_chat['session_id']
     else:
@@ -352,6 +355,40 @@ def update_chat_endpoint(chat_id):
         return jsonify({"message": "Chat updated successfully.", "chat": updated_chat}), 200
     
     return jsonify({"error": "Failed to update chat."}), 500
+
+@app.route('/api/chats/<chat_id>/rename', methods=['PUT'])
+@login_required
+def rename_chat_endpoint(chat_id):
+    """API endpoint specifically for renaming a chat."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "User not found in session."}), 401
+    
+    # Verify the chat belongs to the user
+    chat = get_chat_by_id(chat_id)
+    if not chat:
+        return jsonify({"error": "Chat not found."}), 404
+    
+    if chat.get("user_id") != user_id:
+        return jsonify({"error": "Unauthorized."}), 403
+    
+    data = request.get_json()
+    if not data or 'title' not in data:
+        return jsonify({"error": "Missing 'title' in request body."}), 400
+    
+    new_title = data['title'].strip()
+    if not new_title:
+        return jsonify({"error": "Title cannot be empty."}), 400
+    
+    if len(new_title) > 100:
+        return jsonify({"error": "Title must be 100 characters or less."}), 400
+    
+    # Update the chat title
+    updated_chat = update_chat(chat_id, {"title": new_title})
+    if updated_chat:
+        return jsonify({"message": "Chat renamed successfully.", "chat": updated_chat}), 200
+    
+    return jsonify({"error": "Failed to rename chat."}), 500
 
 @app.route('/api/chats/<chat_id>', methods=['DELETE'])
 @login_required
@@ -581,7 +618,7 @@ def send_message():
     if 'session_id' not in session or 'chat_id' not in session:
         # Create a new chat if none exists
         user_id = session.get('user_id')
-        new_chat = create_new_chat(user_id, "New Chat")
+        new_chat = create_new_chat(user_id)
         session['chat_id'] = new_chat['id']
         session['session_id'] = new_chat['session_id']
     
