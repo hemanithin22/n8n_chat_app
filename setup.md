@@ -15,7 +15,7 @@ Before starting, ensure you have the following installed on your system:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/hemanithin22/n8n_chat_app
 
 # Navigate to the project directory
 cd n8n_chat_app
@@ -372,7 +372,7 @@ For experienced developers, here's the quick setup:
 
 ```bash
 # 1. Clone and navigate
-git clone <repo-url> && cd n8n_chat_app
+git clone https://github.com/hemanithin22/n8n_chat_app && cd n8n_chat_app
 
 # 2. Set up virtual environment
 python -m venv venv
