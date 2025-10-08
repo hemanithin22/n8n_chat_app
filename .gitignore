@@ -82,9 +82,9 @@ logs/
 
 # Data Files (if containing sensitive information)
 # Uncomment if you don't want to commit user data
-# data/users.json
-# data/chats.json
-# data/webhooks.json
+data/users.json
+data/chats.json
+data/webhooks.json
 
 # Archive folder for old/unnecessary files
 archive/
