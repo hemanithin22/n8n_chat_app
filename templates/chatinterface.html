@@ -430,12 +430,6 @@
             <header class="border-b border-slate-800/50 p-4 flex justify-between items-center">
                 <h2 class="text-lg font-semibold text-white">Chat</h2>
                 <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <label for="webhook-selector" class="text-sm text-gray-400">Webhook:</label>
-                        <select id="webhook-selector" class="form-select rounded-lg border-slate-700 bg-background-dark text-sm text-gray-300 focus:border-primary focus:ring-primary">
-                            <option value="">Loading...</option>
-                        </select>
-                    </div>
                     <div class="flex items-center gap-3 border-l border-slate-700 pl-4">
                         <div class="user-menu relative">
                             <button id="user-menu-button" class="flex items-center gap-2 hover:bg-slate-800/50 rounded-lg px-3 py-2 transition-colors">
@@ -510,13 +504,13 @@
             const messageInput = document.getElementById('message-input');
             const chatWindow = document.getElementById('chat-window');
             const sendButton = messageForm.querySelector('button[type="submit"]');
-            const webhookSelector = document.getElementById('webhook-selector');
             const typingAnimationToggle = document.getElementById('typing-animation-toggle');
             const darkModeToggle = document.getElementById('dark-mode-toggle');
             const userMenuButton = document.getElementById('user-menu-button');
             const settingsDropdown = document.getElementById('settings-dropdown');
             let availableWebhooks = [];
             let currentChatId = null; // Track the currently active chat
+            let currentWebhookName = 'Bot'; // Store the current webhook/bot name
             let typingAnimationEnabled = true; // Default to enabled
             let darkModeEnabled = true; // Default to dark mode
 
@@ -576,20 +570,13 @@
                     if (response.ok) {
                         const data = await response.json();
                         availableWebhooks = data.webhooks;
-                        
-                        if (availableWebhooks.length === 0) {
-                            webhookSelector.innerHTML = '<option value="">No webhooks configured</option>';
-                        } else {
-                            webhookSelector.innerHTML = availableWebhooks.map(webhook => 
-                                `<option value="${webhook.id}">${escapeHtml(webhook.name)}</option>`
-                            ).join('');
-                        }
                     } else {
-                        webhookSelector.innerHTML = '<option value="">Error loading webhooks</option>';
+                        console.error('Error loading webhooks');
+                        availableWebhooks = [];
                     }
                 } catch (error) {
                     console.error('Error loading webhooks:', error);
-                    webhookSelector.innerHTML = '<option value="">Error loading webhooks</option>';
+                    availableWebhooks = [];
                 }
             }
 
@@ -678,6 +665,20 @@
             // --- Function to load chat history ---
             async function loadChatHistory(chatId) {
                 try {
+                    // First, get the chat info to retrieve the webhook name
+                    if (chatId) {
+                        try {
+                            const infoResponse = await fetch('/api/chat/info');
+                            if (infoResponse.ok) {
+                                const infoData = await infoResponse.json();
+                                currentWebhookName = infoData.webhook_name || 'Bot';
+                            }
+                        } catch (error) {
+                            console.warn('Could not fetch chat info, using default name:', error);
+                            currentWebhookName = 'Bot';
+                        }
+                    }
+                    
                     const url = chatId ? `/api/chat/history?chat_id=${chatId}` : '/api/chat/history';
                     console.log('Loading chat history from:', url);
                     const response = await fetch(url);
@@ -696,13 +697,13 @@
                                 if (msg.role === 'user') {
                                     addMessageToChat('User', msg.content);
                                 } else if (msg.role === 'assistant') {
-                                    addMessageToChat('Bot', msg.content, false, false);
+                                    addMessageToChat(currentWebhookName, msg.content, false, false);
                                 }
                             });
                         } else {
                             console.log('No history found, showing welcome message');
                             // Show welcome message if no history
-                            addMessageToChat('Bot', 'Hello! How can I assist you today? Type a message below to get started.', false, false);
+                            addMessageToChat(currentWebhookName, 'Hello! How can I assist you today? Type a message below to get started.', false, false);
                         }
                         
                         // Show error if there was a database error but still return 200
@@ -713,12 +714,12 @@
                         console.error('Failed to load chat history, status:', response.status);
                         // Show welcome message on error
                         chatWindow.innerHTML = '';
-                        addMessageToChat('Bot', 'Hello! How can I assist you today? Type a message below to get started.', false, false);
+                        addMessageToChat(currentWebhookName, 'Hello! How can I assist you today? Type a message below to get started.', false, false);
                     }
                 } catch (error) {
                     console.error('Error loading chat history:', error);
                     chatWindow.innerHTML = '';
-                    addMessageToChat('Bot', 'Hello! How can I assist you today? Type a message below to get started.', false, false);
+                    addMessageToChat(currentWebhookName, 'Hello! How can I assist you today? Type a message below to get started.', false, false);
                 }
             }
 
@@ -737,39 +738,118 @@
                         await loadChatHistory(chatId); // Load history for this chat
                     } else {
                         console.error('Failed to switch chat');
-                        addMessageToChat('Bot', 'Failed to switch to this chat. Please try again.', true, false);
+                        addMessageToChat(currentWebhookName, 'Failed to switch to this chat. Please try again.', true, false);
                     }
                 } catch (error) {
                     console.error('Error switching chat:', error);
-                    addMessageToChat('Bot', 'An error occurred while switching chats.', true, false);
+                    addMessageToChat(currentWebhookName, 'An error occurred while switching chats.', true, false);
                 }
             }
 
             // --- Function to create a new chat ---
             async function createNewChat() {
+                // Show webhook selection modal
+                showWebhookSelectionModal();
+            }
+
+            // --- Function to show webhook selection modal ---
+            function showWebhookSelectionModal() {
+                const modal = document.getElementById('webhook-select-modal');
+                const listContainer = document.getElementById('webhook-select-list');
+                
+                if (availableWebhooks.length === 0) {
+                    listContainer.innerHTML = '<div class="text-center text-gray-400 p-4">No webhooks configured. Please add webhooks in Settings.</div>';
+                    modal.classList.remove('hidden');
+                    return;
+                }
+
+                // Group webhooks by table name
+                const grouped = {};
+                availableWebhooks.forEach(webhook => {
+                    const tableName = webhook.tableName || 'n8n_chat_histories';
+                    if (!grouped[tableName]) {
+                        grouped[tableName] = [];
+                    }
+                    grouped[tableName].push(webhook);
+                });
+
+                // Render webhook options grouped by table
+                let html = '';
+                Object.keys(grouped).sort().forEach(tableName => {
+                    html += `
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM40,112H80v32H40Zm56,0H216v32H96ZM216,64V96H40V64ZM40,160H80v32H40Zm176,32H96V160H216v32Z"></path></svg>
+                                ${tableName}
+                            </h4>
+                            <div class="space-y-2 pl-6">
+                                ${grouped[tableName].map(webhook => `
+                                    <button 
+                                        onclick="selectWebhookForNewChat('${webhook.id}')" 
+                                        class="w-full text-left p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors border border-slate-600/50 hover:border-primary/50"
+                                    >
+                                        <div class="font-medium text-white">${escapeHtml(webhook.name)}</div>
+                                        <div class="text-xs text-gray-400 truncate">${escapeHtml(webhook.url)}</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                listContainer.innerHTML = html;
+                modal.classList.remove('hidden');
+            }
+
+            // --- Function to select webhook and create new chat ---
+            window.selectWebhookForNewChat = async function(webhookId) {
+                const modal = document.getElementById('webhook-select-modal');
+                modal.classList.add('hidden');
+
                 try {
                     const response = await fetch('/api/chats', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({})
+                        body: JSON.stringify({ webhook_id: webhookId })
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
                         currentChatId = data.chat.id;
+                        
+                        // Update webhook name from the newly created chat
+                        if (data.chat.webhook_id) {
+                            const webhook = availableWebhooks.find(w => w.id === data.chat.webhook_id);
+                            if (webhook) {
+                                currentWebhookName = webhook.name;
+                            }
+                        }
+                        
                         await loadChats(); // Reload chat list
                         
                         // Clear chat window and show welcome message
                         chatWindow.innerHTML = '';
-                        addMessageToChat('Bot', 'Hello! How can I assist you today? Type a message below to get started.', false, false);
+                        addMessageToChat(currentWebhookName, 'Hello! How can I assist you today? Type a message below to get started.', false, false);
                     } else {
                         console.error('Failed to create new chat');
-                        addMessageToChat('Bot', 'Failed to create a new chat. Please try again.', true, false);
+                        addMessageToChat(currentWebhookName, 'Failed to create a new chat. Please try again.', true, false);
                     }
                 } catch (error) {
                     console.error('Error creating new chat:', error);
-                    addMessageToChat('Bot', 'An error occurred while creating a new chat.', true, false);
+                    addMessageToChat(currentWebhookName, 'An error occurred while creating a new chat.', true, false);
                 }
+            };
+
+            // --- Helper function to escape HTML ---
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
             }
 
             // --- Function to delete a chat ---
@@ -783,8 +863,9 @@
                         // If we deleted the current chat, clear it
                         if (currentChatId === chatId) {
                             currentChatId = null;
+                            currentWebhookName = 'Bot'; // Reset to default
                             chatWindow.innerHTML = '';
-                            addMessageToChat('Bot', 'Hello! How can I assist you today? Type a message below to get started.', false, false);
+                            addMessageToChat(currentWebhookName, 'Hello! How can I assist you today? Type a message below to get started.', false, false);
                         }
                         
                         await loadChats(); // Reload chat list
@@ -967,11 +1048,14 @@
                     messageDiv.className = 'flex items-start gap-4';
                     const messageColor = isError ? 'bg-red-500/20 text-red-300' : 'bg-slate-800 text-slate-200';
                     
+                    // Get first letter of sender name for avatar
+                    const avatarLetter = sender.charAt(0).toUpperCase();
+                    
                     // Create the message structure
                     content = `
-                        <div class="bg-gray-700 p-2 rounded-full text-white text-lg font-bold w-10 h-10 flex items-center justify-center shrink-0">B</div>
+                        <div class="bg-gray-700 p-2 rounded-full text-white text-lg font-bold w-10 h-10 flex items-center justify-center shrink-0">${avatarLetter}</div>
                         <div class="flex flex-col gap-1">
-                            <p class="text-sm font-medium text-slate-400">Bot</p>
+                            <p class="text-sm font-medium text-slate-400">${escapeHtml(sender)}</p>
                             <div class="max-w-2xl rounded-lg p-3 ${messageColor} markdown-content"></div>
                         </div>
                     `;
@@ -1065,10 +1149,14 @@
                 const typingDiv = document.createElement('div');
                 typingDiv.className = 'flex items-start gap-4';
                 typingDiv.id = 'typing-indicator';
+                
+                // Get first letter of webhook name for avatar
+                const avatarLetter = currentWebhookName.charAt(0).toUpperCase();
+                
                 typingDiv.innerHTML = `
-                    <div class="bg-gray-700 p-2 rounded-full text-white text-lg font-bold w-10 h-10 flex items-center justify-center shrink-0">B</div>
+                    <div class="bg-gray-700 p-2 rounded-full text-white text-lg font-bold w-10 h-10 flex items-center justify-center shrink-0">${avatarLetter}</div>
                     <div class="flex flex-col gap-1">
-                        <p class="text-sm font-medium text-slate-400">Bot</p>
+                        <p class="text-sm font-medium text-slate-400">${escapeHtml(currentWebhookName)}</p>
                         <div class="max-w-md rounded-lg bg-slate-800 p-3 text-slate-200">
                             <div class="typing-indicator">
                                 <div class="typing-dot"></div>
@@ -1103,13 +1191,12 @@
             messageForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const messageText = messageInput.value.trim();
-                const selectedWebhookId = webhookSelector.value;
 
                 if (!messageText) return;
 
-                // Check if a webhook is selected
-                if (!selectedWebhookId) {
-                    addMessageToChat('Bot', 'Please configure a webhook in the Manage Webhooks page before sending messages.', true, false);
+                // Check if user has an active chat
+                if (!currentChatId) {
+                    addMessageToChat(currentWebhookName, 'Please create a new chat first by clicking the "New Chat" button.', true, false);
                     return;
                 }
 
@@ -1125,14 +1212,13 @@
                 // 2. Show typing indicator
                 showTypingIndicator();
 
-                // 3. Send message to the backend with selected webhook
+                // 3. Send message to the backend
                 try {
                     const response = await fetch('/chat/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            message: messageText,
-                            webhook_id: selectedWebhookId
+                            message: messageText
                         }),
                     });
 
@@ -1143,15 +1229,15 @@
 
                     // 4. Display bot's response or error with typing animation (based on toggle state)
                     if (data.reply) {
-                        addMessageToChat('Bot', data.reply, false, typingAnimationEnabled);
+                        addMessageToChat(currentWebhookName, data.reply, false, typingAnimationEnabled);
                     } else if (data.error) {
-                        addMessageToChat('Bot', `Error: ${data.error}`, true, false); // No animation for errors
+                        addMessageToChat(currentWebhookName, `Error: ${data.error}`, true, false); // No animation for errors
                     }
 
                 } catch (error) {
                     console.error('Failed to send message:', error);
                     removeTypingIndicator();
-                    addMessageToChat('Bot', 'An unexpected error occurred. Could not connect to the server.', true);
+                    addMessageToChat(currentWebhookName, 'An unexpected error occurred. Could not connect to the server.', true);
                 } finally {
                     // Re-enable send button and input
                     sendButton.disabled = false;
@@ -1169,6 +1255,18 @@
             
             // Add event listener for "New Chat" button
             document.getElementById('new-chat-btn').addEventListener('click', createNewChat);
+            
+            // Add event listener for webhook selection modal cancel button
+            document.getElementById('webhook-select-cancel-btn').addEventListener('click', () => {
+                document.getElementById('webhook-select-modal').classList.add('hidden');
+            });
+            
+            // Close modal on outside click
+            document.getElementById('webhook-select-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'webhook-select-modal') {
+                    document.getElementById('webhook-select-modal').classList.add('hidden');
+                }
+            });
         });
     </script>
 
@@ -1195,6 +1293,24 @@
                     class="px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded transition-colors"
                 >
                     Rename
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chat Webhook Selection Modal -->
+    <div id="webhook-select-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-white mb-4">Select Webhook for New Chat</h3>
+            <p class="text-sm text-gray-400 mb-4">Choose which webhook/table this chat should use. This selection is permanent for the conversation.</p>
+            
+            <div id="webhook-select-list" class="space-y-2 mb-6 max-h-96 overflow-y-auto">
+                <!-- Webhook options will be populated here -->
+            </div>
+            
+            <div class="flex gap-3 justify-end">
+                <button type="button" id="webhook-select-cancel-btn" class="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors">
+                    Cancel
                 </button>
             </div>
         </div>

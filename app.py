@@ -151,7 +151,7 @@ def get_chat_by_id(chat_id):
             return chat
     return None
 
-def create_new_chat(user_id, title=None):
+def create_new_chat(user_id, title=None, webhook_id=None, table_name=None):
     """Creates a new chat for a user."""
     from datetime import datetime
     chats = read_chats()
@@ -167,11 +167,17 @@ def create_new_chat(user_id, title=None):
         formatted_date = now.strftime("%b %-d, %H:%M") if os.name != 'nt' else now.strftime("%b %d, %H:%M").replace(" 0", " ")
         title = f"Chat-{user_chats_count + 1} ({formatted_date})"
     
+    # Default to n8n_chat_histories if no table_name provided
+    if not table_name:
+        table_name = "n8n_chat_histories"
+    
     new_chat = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "session_id": session_id,
         "title": title,
+        "table_name": table_name,
+        "webhook_id": webhook_id,
         "created_at": datetime.now().isoformat(),
         "updated_at": datetime.now().isoformat()
     }
@@ -312,8 +318,18 @@ def create_chat():
     
     data = request.get_json() or {}
     title = data.get('title')
+    webhook_id = data.get('webhook_id')
     
-    new_chat = create_new_chat(user_id, title)
+    # Get table_name from webhook if webhook_id is provided
+    table_name = None
+    if webhook_id:
+        webhook = get_webhook_by_id(webhook_id)
+        if webhook:
+            table_name = webhook.get('tableName', 'n8n_chat_histories')
+        else:
+            return jsonify({"error": "Invalid webhook ID."}), 400
+    
+    new_chat = create_new_chat(user_id, title, webhook_id, table_name)
     
     # Set this as the active chat
     session['chat_id'] = new_chat['id']
@@ -427,14 +443,15 @@ def get_webhooks():
 def create_webhook():
     """API endpoint to create a new webhook."""
     data = request.get_json()
-    if not data or 'name' not in data or 'url' not in data:
-        return jsonify({"error": "Missing 'name' or 'url' in request body."}), 400
+    if not data or 'name' not in data or 'url' not in data or 'tableName' not in data:
+        return jsonify({"error": "Missing 'name', 'url', or 'tableName' in request body."}), 400
     
     webhooks = read_webhooks()
     new_webhook = {
         "id": str(uuid.uuid4()),
         "name": data['name'],
-        "url": data['url']
+        "url": data['url'],
+        "tableName": data['tableName']
     }
     webhooks.append(new_webhook)
     write_webhooks(webhooks)
@@ -444,8 +461,8 @@ def create_webhook():
 def update_webhook(webhook_id):
     """API endpoint to update an existing webhook."""
     data = request.get_json()
-    if not data or ('name' not in data and 'url' not in data):
-        return jsonify({"error": "Missing 'name' or 'url' in request body."}), 400
+    if not data or ('name' not in data and 'url' not in data and 'tableName' not in data):
+        return jsonify({"error": "Missing 'name', 'url', or 'tableName' in request body."}), 400
     
     webhooks = read_webhooks()
     webhook_found = False
@@ -456,6 +473,8 @@ def update_webhook(webhook_id):
                 webhook['name'] = data['name']
             if 'url' in data:
                 webhook['url'] = data['url']
+            if 'tableName' in data:
+                webhook['tableName'] = data['tableName']
             webhook_found = True
             break
     
@@ -517,6 +536,38 @@ def delete_webhook_legacy():
     write_webhooks([])
     return jsonify({"message": "Webhook deleted successfully."}), 200
 
+@app.route('/api/chat/info', methods=['GET'])
+@login_required
+def get_chat_info_api():
+    """API endpoint to retrieve current chat information including webhook details."""
+    chat_id = session.get('chat_id')
+    
+    if not chat_id:
+        return jsonify({"error": "No active chat found."}), 404
+    
+    chat = get_chat_by_id(chat_id)
+    if not chat:
+        return jsonify({"error": "Chat not found."}), 404
+    
+    user_id = session.get('user_id')
+    if chat.get("user_id") != user_id:
+        return jsonify({"error": "Unauthorized."}), 403
+    
+    # Get webhook information if available
+    webhook_name = "Bot"  # Default name
+    webhook_id = chat.get('webhook_id')
+    
+    if webhook_id:
+        webhook = get_webhook_by_id(webhook_id)
+        if webhook:
+            webhook_name = webhook.get('name', 'Bot')
+    
+    return jsonify({
+        "chat_id": chat_id,
+        "title": chat.get('title'),
+        "webhook_name": webhook_name
+    }), 200
+
 @app.route('/api/chat/history', methods=['GET'])
 @login_required
 def get_chat_history_api():
@@ -536,6 +587,7 @@ def get_chat_history_api():
             return jsonify({"error": "Unauthorized."}), 403
         
         session_id = chat['session_id']
+        table_name = chat.get('table_name', 'n8n_chat_histories')
     else:
         # Get history for current active chat
         if 'session_id' not in session:
@@ -543,10 +595,14 @@ def get_chat_history_api():
         
         session_id = session['session_id']
         chat_id = session.get('chat_id')
+        
+        # Get table_name from current chat
+        chat = get_chat_by_id(chat_id) if chat_id else None
+        table_name = chat.get('table_name', 'n8n_chat_histories') if chat else 'n8n_chat_histories'
     
     try:
-        # Get raw history from database
-        raw_history = get_chat_history(session_id)
+        # Get raw history from database using the table_name
+        raw_history = get_chat_history(session_id, table_name)
         
         # Transform the history to frontend-friendly format
         formatted_history = []
@@ -599,31 +655,36 @@ def send_message():
         return jsonify({"error": "Invalid request. 'message' field is required."}), 400
 
     user_message = user_data['message']
-    webhook_id = user_data.get('webhook_id')  # Optional webhook ID
     
-    # Get the webhook to use
-    if webhook_id:
-        webhook = get_webhook_by_id(webhook_id)
-        if not webhook:
-            return jsonify({"error": "Selected webhook not found. Please select a valid webhook."}), 404
-        webhook_url = webhook['url']
-    else:
-        # Use the first webhook if no specific one is selected
-        webhooks = read_webhooks()
-        if not webhooks or len(webhooks) == 0:
-            return jsonify({"error": "No webhook is configured. Please set one in the Webhook Management page."}), 400
-        webhook_url = webhooks[0]['url']
-
     # Ensure user has an active chat
     if 'session_id' not in session or 'chat_id' not in session:
-        # Create a new chat if none exists
-        user_id = session.get('user_id')
-        new_chat = create_new_chat(user_id)
-        session['chat_id'] = new_chat['id']
-        session['session_id'] = new_chat['session_id']
+        return jsonify({"error": "No active chat. Please create a chat first."}), 400
     
     session_id = session['session_id']
     chat_id = session.get('chat_id')
+    
+    # Get the current chat to find its associated webhook
+    chat = get_chat_by_id(chat_id)
+    if not chat:
+        return jsonify({"error": "Chat not found."}), 404
+    
+    # Get webhook from chat's webhook_id
+    webhook_id = chat.get('webhook_id')
+    if webhook_id:
+        webhook = get_webhook_by_id(webhook_id)
+        if not webhook:
+            return jsonify({"error": "Webhook associated with this chat not found."}), 404
+        webhook_url = webhook['url']
+        table_name = webhook.get('tableName', 'n8n_chat_histories')
+    else:
+        # Fallback: use the first webhook if no specific one is associated
+        webhooks = read_webhooks()
+        if not webhooks or len(webhooks) == 0:
+            return jsonify({"error": "No webhook is configured. Please set one in the Webhook Management page."}), 400
+        webhook = webhooks[0]
+        webhook_url = webhook['url']
+        table_name = webhook.get('tableName', 'n8n_chat_histories')
+    
     username = session.get('username', 'Anonymous')
     
     # Update the chat's updated_at timestamp

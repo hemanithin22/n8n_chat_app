@@ -74,6 +74,10 @@
                                 <label for="webhook-url" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
                                 <input id="webhook-url" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="https://example.com/webhook-endpoint" />
                             </div>
+                            <div class="w-full">
+                                <label for="webhook-table" class="block text-sm font-medium text-gray-300 mb-2">Table Name</label>
+                                <input id="webhook-table" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="e.g., sales_chats, support_tickets" />
+                            </div>
                             <button type="submit" class="flex w-full sm:w-auto items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
                                 <span class="material-symbols-outlined mr-2 text-base">add</span>
                                 <span>Add Webhook</span>
@@ -103,6 +107,10 @@
                                     <label for="edit-webhook-url" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
                                     <input id="edit-webhook-url" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" />
                                 </div>
+                                <div class="mb-4">
+                                    <label for="edit-webhook-table" class="block text-sm font-medium text-gray-300 mb-2">Table Name</label>
+                                    <input id="edit-webhook-table" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" />
+                                </div>
                                 <div class="flex gap-3 justify-end">
                                     <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors">Cancel</button>
                                     <button type="submit" class="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
@@ -122,6 +130,7 @@
             const webhookForm = document.getElementById('webhook-form');
             const webhookNameInput = document.getElementById('webhook-name');
             const webhookUrlInput = document.getElementById('webhook-url');
+            const webhookTableInput = document.getElementById('webhook-table');
             const webhooksList = document.getElementById('webhooks-list');
             const notification = document.getElementById('notification');
             const editModal = document.getElementById('edit-modal');
@@ -136,34 +145,85 @@
                 setTimeout(() => notification.classList.add('hidden'), 5000);
             }
 
-            // --- Function to render webhooks list ---
+            // --- Function to render webhooks list grouped by table name ---
             function renderWebhooks(webhooks) {
                 if (!webhooks || webhooks.length === 0) {
                     webhooksList.innerHTML = '<div class="text-center text-gray-400 p-6 bg-gray-800/20 rounded-lg border border-gray-700/50">No webhooks configured yet.</div>';
                     return;
                 }
 
-                webhooksList.innerHTML = webhooks.map(webhook => `
-                    <div class="bg-gray-800/20 rounded-lg border border-gray-700/50 p-6">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-semibold text-white mb-2">${escapeHtml(webhook.name)}</h3>
-                                <code class="text-sm text-gray-400 break-all">${escapeHtml(webhook.url)}</code>
-                            </div>
-                            <div class="flex gap-2 flex-shrink-0">
-                                <button onclick="editWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-blue-400 hover:bg-blue-500/20 transition-colors">
-                                    <span class="material-symbols-outlined text-base">edit</span>
-                                    <span>Edit</span>
-                                </button>
-                                <button onclick="deleteWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/20 transition-colors">
-                                    <span class="material-symbols-outlined text-base">delete</span>
-                                    <span>Delete</span>
-                                </button>
+                // Group webhooks by tableName
+                const grouped = {};
+                webhooks.forEach(webhook => {
+                    const tableName = webhook.tableName || 'n8n_chat_histories';
+                    if (!grouped[tableName]) {
+                        grouped[tableName] = [];
+                    }
+                    grouped[tableName].push(webhook);
+                });
+
+                // Render accordion
+                let html = '';
+                Object.keys(grouped).sort().forEach(tableName => {
+                    const tableWebhooks = grouped[tableName];
+                    const accordionId = `accordion-${tableName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    
+                    html += `
+                        <div class="border border-gray-700/50 rounded-lg overflow-hidden bg-gray-800/20">
+                            <button type="button" onclick="toggleAccordion('${accordionId}')" class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-700/30 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-primary">table_chart</span>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-white">${escapeHtml(tableName)}</h3>
+                                        <p class="text-sm text-gray-400">${tableWebhooks.length} webhook(s)</p>
+                                    </div>
+                                </div>
+                                <span id="${accordionId}-icon" class="material-symbols-outlined text-gray-400 transform transition-transform">expand_more</span>
+                            </button>
+                            <div id="${accordionId}" class="hidden border-t border-gray-700/50">
+                                <div class="p-4 space-y-3">
+                                    ${tableWebhooks.map(webhook => `
+                                        <div class="bg-gray-900/30 rounded-lg p-4 border border-gray-700/30">
+                                            <div class="flex items-start justify-between gap-4">
+                                                <div class="flex-1 min-w-0">
+                                                    <h4 class="text-base font-semibold text-white mb-1">${escapeHtml(webhook.name)}</h4>
+                                                    <code class="text-xs text-gray-400 break-all">${escapeHtml(webhook.url)}</code>
+                                                </div>
+                                                <div class="flex gap-2 flex-shrink-0">
+                                                    <button onclick="editWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-blue-400 hover:bg-blue-500/20 transition-colors">
+                                                        <span class="material-symbols-outlined text-base">edit</span>
+                                                        <span>Edit</span>
+                                                    </button>
+                                                    <button onclick="deleteWebhook('${webhook.id}')" class="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/20 transition-colors">
+                                                        <span class="material-symbols-outlined text-base">delete</span>
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                });
+
+                webhooksList.innerHTML = html;
             }
+
+            // --- Function to toggle accordion ---
+            window.toggleAccordion = function(accordionId) {
+                const accordion = document.getElementById(accordionId);
+                const icon = document.getElementById(`${accordionId}-icon`);
+                
+                if (accordion.classList.contains('hidden')) {
+                    accordion.classList.remove('hidden');
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    accordion.classList.add('hidden');
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            };
 
             // --- Function to escape HTML ---
             function escapeHtml(text) {
@@ -198,9 +258,10 @@
                 e.preventDefault();
                 const name = webhookNameInput.value.trim();
                 const url = webhookUrlInput.value.trim();
+                const tableName = webhookTableInput.value.trim();
                 
-                if (!name || !url) {
-                    showNotification('Both name and URL are required.', true);
+                if (!name || !url || !tableName) {
+                    showNotification('Name, URL, and Table Name are all required.', true);
                     return;
                 }
 
@@ -208,13 +269,14 @@
                     const response = await fetch('/api/webhooks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, url })
+                        body: JSON.stringify({ name, url, tableName })
                     });
                     const data = await response.json();
                     if (response.ok) {
                         showNotification('Webhook added successfully!');
                         webhookNameInput.value = '';
                         webhookUrlInput.value = '';
+                        webhookTableInput.value = '';
                         fetchWebhooks();
                     } else {
                         showNotification(data.error || 'Failed to add webhook.', true);
@@ -235,6 +297,7 @@
                             document.getElementById('edit-webhook-id').value = webhook.id;
                             document.getElementById('edit-webhook-name').value = webhook.name;
                             document.getElementById('edit-webhook-url').value = webhook.url;
+                            document.getElementById('edit-webhook-table').value = webhook.tableName || 'n8n_chat_histories';
                             editModal.classList.remove('hidden');
                         }
                     }
@@ -268,9 +331,10 @@
                 const webhookId = document.getElementById('edit-webhook-id').value;
                 const name = document.getElementById('edit-webhook-name').value.trim();
                 const url = document.getElementById('edit-webhook-url').value.trim();
+                const tableName = document.getElementById('edit-webhook-table').value.trim();
                 
-                if (!name || !url) {
-                    showNotification('Both name and URL are required.', true);
+                if (!name || !url || !tableName) {
+                    showNotification('Name, URL, and Table Name are all required.', true);
                     return;
                 }
 
@@ -278,7 +342,7 @@
                     const response = await fetch(`/api/webhooks/${webhookId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, url })
+                        body: JSON.stringify({ name, url, tableName })
                     });
                     const data = await response.json();
                     if (response.ok) {

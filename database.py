@@ -43,12 +43,13 @@ def get_db_connection():
         raise
 
 
-def get_chat_history(session_id: str) -> List[Dict[str, Any]]:
+def get_chat_history(session_id: str, table_name: str = "n8n_chat_histories") -> List[Dict[str, Any]]:
     """
-    Retrieves all chat messages for a given session_id, ordered by id.
+    Retrieves all chat messages for a given session_id from a specific table, ordered by id.
     
     Args:
         session_id (str): The session identifier for the chat
+        table_name (str): The name of the database table to query (default: "n8n_chat_histories")
     
     Returns:
         list: A list of message dictionaries, each containing:
@@ -57,7 +58,7 @@ def get_chat_history(session_id: str) -> List[Dict[str, Any]]:
               - message: The parsed JSON message object
               
     Example:
-        >>> get_chat_history("abc-123")
+        >>> get_chat_history("abc-123", "sales_chats")
         [
             {
                 "id": 1,
@@ -87,13 +88,16 @@ def get_chat_history(session_id: str) -> List[Dict[str, Any]]:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Query all messages for the session, ordered by id
-        query = """
+        # Query all messages for the session from the specified table, ordered by id
+        # Using parameterized table name safely with psycopg2.sql
+        from psycopg2 import sql
+        query = sql.SQL("""
             SELECT id, session_id, message
-            FROM n8n_chat_histories
+            FROM {}
             WHERE session_id = %s
             ORDER BY id ASC
-        """
+        """).format(sql.Identifier(table_name))
+        
         cursor.execute(query, (session_id,))
         
         rows = cursor.fetchall()
