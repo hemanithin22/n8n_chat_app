@@ -181,9 +181,15 @@ def create_new_chat(user_id, title=None, webhook_id=None, table_name=None):
     if not title:
         user_chats_count = len(get_user_chats(user_id))
         now = datetime.now()
-        # Format: Chat-1 (Jan 7, 22:30)
+        # Get webhook name if webhook_id is provided
+        webhook_name = "Chat"
+        if webhook_id:
+            webhook = get_webhook_by_id(webhook_id)
+            if webhook:
+                webhook_name = webhook.get("name", "Chat")
+        # Format: webhook name-1 (Oct 8, 14:35)
         formatted_date = now.strftime("%b %-d, %H:%M") if os.name != 'nt' else now.strftime("%b %d, %H:%M").replace(" 0", " ")
-        title = f"Chat-{user_chats_count + 1} ({formatted_date})"
+        title = f"{webhook_name}-{user_chats_count + 1} ({formatted_date})"
     
     # Default to n8n_chat_histories if no table_name provided
     if not table_name:

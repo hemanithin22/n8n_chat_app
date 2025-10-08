@@ -38,7 +38,17 @@
             "table_name": "n8n_chat_histories_testing",
             "webhook_id": "144d8b1d-ab67-4fd2-b6ba-4c058565add7",
             "created_at": "2025-10-08T14:35:09.597196",
-            "updated_at": "2025-10-08T14:35:25.748277"
+            "updated_at": "2025-10-08T14:38:11.732078"
+        },
+        {
+            "id": "6c9c5cbc-4b5d-4491-afe8-67f210628849",
+            "user_id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
+            "session_id": "df155531-7872-41b3-8fe3-8c91240ebe23",
+            "title": "Storable-class ai-2 (Oct 8, 14:38)",
+            "table_name": "n8n_chat_histories",
+            "webhook_id": "465a11eb-d6fe-4388-bb4f-58bcb5d1e463",
+            "created_at": "2025-10-08T14:38:55.101105",
+            "updated_at": "2025-10-08T14:38:55.101115"
         }
     ]
 }
