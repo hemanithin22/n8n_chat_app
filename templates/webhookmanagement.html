@@ -78,6 +78,45 @@
                                 <label for="webhook-table" class="block text-sm font-medium text-gray-300 mb-2">Table Name</label>
                                 <input id="webhook-table" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="e.g., sales_chats, support_tickets" />
                             </div>
+                            
+                            <!-- Custom JSON Fields Section -->
+                            <div class="w-full border-t border-gray-700 pt-4 mt-2">
+                                <h3 class="text-md font-semibold text-white mb-3 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h64a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"></path></svg>
+                                    Customize JSON Fields
+                                </h3>
+                                <p class="text-xs text-gray-400 mb-4">Configure the JSON key names for webhook communication (optional - defaults will be used if left empty)</p>
+                                
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="session-id-key" class="block text-sm font-medium text-gray-300 mb-2">
+                                            Session ID Key
+                                            <span class="text-xs text-gray-500 font-normal ml-1">(for outgoing JSON)</span>
+                                        </label>
+                                        <input id="session-id-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="jsonsession id" />
+                                        <p class="text-xs text-gray-500 mt-1">The key name for the session ID in requests sent to the webhook</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="user-message-key" class="block text-sm font-medium text-gray-300 mb-2">
+                                            User Message Key
+                                            <span class="text-xs text-gray-500 font-normal ml-1">(for outgoing JSON)</span>
+                                        </label>
+                                        <input id="user-message-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="chatiput" />
+                                        <p class="text-xs text-gray-500 mt-1">The key name for the user's message in requests sent to the webhook</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="reply-key" class="block text-sm font-medium text-gray-300 mb-2">
+                                            AI Reply Key
+                                            <span class="text-xs text-gray-500 font-normal ml-1">(for incoming JSON)</span>
+                                        </label>
+                                        <input id="reply-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm placeholder:text-gray-500" placeholder="reply" />
+                                        <p class="text-xs text-gray-500 mt-1">The key name to look for in the webhook's response containing the AI's message</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <button type="submit" class="flex w-full sm:w-auto items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
                                 <span class="material-symbols-outlined mr-2 text-base">add</span>
                                 <span>Add Webhook</span>
@@ -95,7 +134,7 @@
                     
                     <!-- Edit Modal -->
                     <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
                             <h3 class="text-xl font-bold text-white mb-4">Edit Webhook</h3>
                             <form id="edit-form">
                                 <input type="hidden" id="edit-webhook-id">
@@ -111,6 +150,39 @@
                                     <label for="edit-webhook-table" class="block text-sm font-medium text-gray-300 mb-2">Table Name</label>
                                     <input id="edit-webhook-table" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" />
                                 </div>
+                                
+                                <!-- Custom JSON Fields in Edit Modal -->
+                                <div class="mb-4 border-t border-gray-700 pt-4">
+                                    <h4 class="text-md font-semibold text-white mb-3 flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h64a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"></path></svg>
+                                        Customize JSON Fields
+                                    </h4>
+                                    <p class="text-xs text-gray-400 mb-3">Configure the JSON key names for webhook communication</p>
+                                    
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label for="edit-session-id-key" class="block text-sm font-medium text-gray-300 mb-1">
+                                                Session ID Key <span class="text-xs text-gray-500 font-normal">(outgoing)</span>
+                                            </label>
+                                            <input id="edit-session-id-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" placeholder="jsonsession id" />
+                                        </div>
+                                        
+                                        <div>
+                                            <label for="edit-user-message-key" class="block text-sm font-medium text-gray-300 mb-1">
+                                                User Message Key <span class="text-xs text-gray-500 font-normal">(outgoing)</span>
+                                            </label>
+                                            <input id="edit-user-message-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" placeholder="chatiput" />
+                                        </div>
+                                        
+                                        <div>
+                                            <label for="edit-reply-key" class="block text-sm font-medium text-gray-300 mb-1">
+                                                AI Reply Key <span class="text-xs text-gray-500 font-normal">(incoming)</span>
+                                            </label>
+                                            <input id="edit-reply-key" class="form-input w-full rounded-lg border-gray-600 bg-background-dark focus:border-primary focus:ring-primary text-sm" placeholder="reply" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="flex gap-3 justify-end">
                                     <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors">Cancel</button>
                                     <button type="submit" class="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
@@ -260,16 +332,28 @@
                 const url = webhookUrlInput.value.trim();
                 const tableName = webhookTableInput.value.trim();
                 
+                // Get custom JSON field names (use defaults if empty)
+                const sessionIdKey = document.getElementById('session-id-key').value.trim();
+                const userMessageKey = document.getElementById('user-message-key').value.trim();
+                const replyKey = document.getElementById('reply-key').value.trim();
+                
                 if (!name || !url || !tableName) {
                     showNotification('Name, URL, and Table Name are all required.', true);
                     return;
                 }
 
                 try {
+                    const payload = { name, url, tableName };
+                    
+                    // Add custom keys only if provided (backend will use defaults if not)
+                    if (sessionIdKey) payload.sessionIdKey = sessionIdKey;
+                    if (userMessageKey) payload.userMessageKey = userMessageKey;
+                    if (replyKey) payload.replyKey = replyKey;
+                    
                     const response = await fetch('/api/webhooks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, url, tableName })
+                        body: JSON.stringify(payload)
                     });
                     const data = await response.json();
                     if (response.ok) {
@@ -277,6 +361,9 @@
                         webhookNameInput.value = '';
                         webhookUrlInput.value = '';
                         webhookTableInput.value = '';
+                        document.getElementById('session-id-key').value = '';
+                        document.getElementById('user-message-key').value = '';
+                        document.getElementById('reply-key').value = '';
                         fetchWebhooks();
                     } else {
                         showNotification(data.error || 'Failed to add webhook.', true);
@@ -298,6 +385,12 @@
                             document.getElementById('edit-webhook-name').value = webhook.name;
                             document.getElementById('edit-webhook-url').value = webhook.url;
                             document.getElementById('edit-webhook-table').value = webhook.tableName || 'n8n_chat_histories';
+                            
+                            // Load custom JSON field names with defaults
+                            document.getElementById('edit-session-id-key').value = webhook.sessionIdKey || 'jsonsession id';
+                            document.getElementById('edit-user-message-key').value = webhook.userMessageKey || 'chatiput';
+                            document.getElementById('edit-reply-key').value = webhook.replyKey || 'reply';
+                            
                             editModal.classList.remove('hidden');
                         }
                     }
@@ -333,16 +426,28 @@
                 const url = document.getElementById('edit-webhook-url').value.trim();
                 const tableName = document.getElementById('edit-webhook-table').value.trim();
                 
+                // Get custom JSON field names
+                const sessionIdKey = document.getElementById('edit-session-id-key').value.trim();
+                const userMessageKey = document.getElementById('edit-user-message-key').value.trim();
+                const replyKey = document.getElementById('edit-reply-key').value.trim();
+                
                 if (!name || !url || !tableName) {
                     showNotification('Name, URL, and Table Name are all required.', true);
                     return;
                 }
 
                 try {
+                    const payload = { name, url, tableName };
+                    
+                    // Add custom keys
+                    if (sessionIdKey) payload.sessionIdKey = sessionIdKey;
+                    if (userMessageKey) payload.userMessageKey = userMessageKey;
+                    if (replyKey) payload.replyKey = replyKey;
+                    
                     const response = await fetch(`/api/webhooks/${webhookId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, url, tableName })
+                        body: JSON.stringify(payload)
                     });
                     const data = await response.json();
                     if (response.ok) {

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import requests
 import uuid
 from functools import wraps
@@ -20,7 +21,24 @@ WEBHOOK_FILE = os.path.join(DATA_DIR, 'webhooks.json')
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
 CHATS_FILE = os.path.join(DATA_DIR, 'chats.json')
 
+# Default JSON field names for webhook communication
+DEFAULT_SESSION_ID_KEY = 'session_id'
+DEFAULT_USER_MESSAGE_KEY = 'user_message'
+DEFAULT_REPLY_KEY = 'reply'
+
 # --- Helper Functions ---
+
+def validate_json_key_name(key_name):
+    """Validates that a key name is valid for JSON (alphanumeric and underscore only)."""
+    if not key_name or not isinstance(key_name, str):
+        return False
+    # Allow alphanumeric characters, underscores, and spaces (for backward compatibility)
+    # but trim spaces from beginning and end
+    key_name = key_name.strip()
+    if not key_name:
+        return False
+    # Allow letters, numbers, underscores, and spaces
+    return bool(re.match(r'^[a-zA-Z0-9_ ]+$', key_name))
 
 def ensure_data_file():
     """Ensures the data directory and data files exist."""
@@ -446,12 +464,28 @@ def create_webhook():
     if not data or 'name' not in data or 'url' not in data or 'tableName' not in data:
         return jsonify({"error": "Missing 'name', 'url', or 'tableName' in request body."}), 400
     
+    # Get custom JSON field names with defaults
+    session_id_key = data.get('sessionIdKey', DEFAULT_SESSION_ID_KEY).strip()
+    user_message_key = data.get('userMessageKey', DEFAULT_USER_MESSAGE_KEY).strip()
+    reply_key = data.get('replyKey', DEFAULT_REPLY_KEY).strip()
+    
+    # Validate custom key names
+    if not validate_json_key_name(session_id_key):
+        return jsonify({"error": f"Invalid Session ID Key name. Use only letters, numbers, underscores, and spaces."}), 400
+    if not validate_json_key_name(user_message_key):
+        return jsonify({"error": f"Invalid User Message Key name. Use only letters, numbers, underscores, and spaces."}), 400
+    if not validate_json_key_name(reply_key):
+        return jsonify({"error": f"Invalid AI Reply Key name. Use only letters, numbers, underscores, and spaces."}), 400
+    
     webhooks = read_webhooks()
     new_webhook = {
         "id": str(uuid.uuid4()),
         "name": data['name'],
         "url": data['url'],
-        "tableName": data['tableName']
+        "tableName": data['tableName'],
+        "sessionIdKey": session_id_key,
+        "userMessageKey": user_message_key,
+        "replyKey": reply_key
     }
     webhooks.append(new_webhook)
     write_webhooks(webhooks)
@@ -461,8 +495,8 @@ def create_webhook():
 def update_webhook(webhook_id):
     """API endpoint to update an existing webhook."""
     data = request.get_json()
-    if not data or ('name' not in data and 'url' not in data and 'tableName' not in data):
-        return jsonify({"error": "Missing 'name', 'url', or 'tableName' in request body."}), 400
+    if not data or ('name' not in data and 'url' not in data and 'tableName' not in data and 'sessionIdKey' not in data and 'userMessageKey' not in data and 'replyKey' not in data):
+        return jsonify({"error": "Missing required fields in request body."}), 400
     
     webhooks = read_webhooks()
     webhook_found = False
@@ -475,6 +509,26 @@ def update_webhook(webhook_id):
                 webhook['url'] = data['url']
             if 'tableName' in data:
                 webhook['tableName'] = data['tableName']
+            
+            # Update custom JSON field names with validation
+            if 'sessionIdKey' in data:
+                session_id_key = data['sessionIdKey'].strip()
+                if not validate_json_key_name(session_id_key):
+                    return jsonify({"error": "Invalid Session ID Key name. Use only letters, numbers, underscores, and spaces."}), 400
+                webhook['sessionIdKey'] = session_id_key
+            
+            if 'userMessageKey' in data:
+                user_message_key = data['userMessageKey'].strip()
+                if not validate_json_key_name(user_message_key):
+                    return jsonify({"error": "Invalid User Message Key name. Use only letters, numbers, underscores, and spaces."}), 400
+                webhook['userMessageKey'] = user_message_key
+            
+            if 'replyKey' in data:
+                reply_key = data['replyKey'].strip()
+                if not validate_json_key_name(reply_key):
+                    return jsonify({"error": "Invalid AI Reply Key name. Use only letters, numbers, underscores, and spaces."}), 400
+                webhook['replyKey'] = reply_key
+            
             webhook_found = True
             break
     
@@ -691,9 +745,15 @@ def send_message():
     if chat_id:
         update_chat(chat_id, {})
 
+    # Get custom JSON field names with defaults (for backward compatibility)
+    session_id_key = webhook.get('sessionIdKey', DEFAULT_SESSION_ID_KEY)
+    user_message_key = webhook.get('userMessageKey', DEFAULT_USER_MESSAGE_KEY)
+    reply_key = webhook.get('replyKey', DEFAULT_REPLY_KEY)
+
+    # Dynamically build the payload using custom key names
     payload = {
-        "user_message": user_message,
-        "session_id": session_id,
+        user_message_key: user_message,
+        session_id_key: session_id,
         "username": username
     }
     
@@ -704,10 +764,12 @@ def send_message():
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
         
         webhook_response = response.json()
-        if 'reply' not in webhook_response:
-             return jsonify({"error": "Webhook response is missing the 'reply' key."}), 500
+        
+        # Use custom reply key to extract the response
+        if reply_key not in webhook_response:
+             return jsonify({"error": f"Webhook response is missing the '{reply_key}' key."}), 500
 
-        return jsonify({"reply": webhook_response['reply']})
+        return jsonify({"reply": webhook_response[reply_key]})
 
     except requests.exceptions.Timeout:
         return jsonify({"error": "The request to the webhook timed out."}), 504

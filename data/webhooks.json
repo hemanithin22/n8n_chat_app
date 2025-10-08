@@ -1,10 +1,22 @@
 {
     "webhooks": [
         {
-            "id": "eacc1407-921b-47c6-ad77-230d48315070",
+            "id": "465a11eb-d6fe-4388-bb4f-58bcb5d1e463",
             "name": "Storable-class ai",
             "url": "http://192.168.64.5:5678/webhook/a48ecf53-1dd3-4c14-b786-a8dc8c250595",
-            "tableName": "n8n_chat_histories"
+            "tableName": "n8n_chat_histories",
+            "sessionIdKey": "session_id",
+            "userMessageKey": "user_message",
+            "replyKey": "reply"
+        },
+        {
+            "id": "144d8b1d-ab67-4fd2-b6ba-4c058565add7",
+            "name": "Custom-opcode ai",
+            "url": "http://192.168.64.5:5678/webhook-test/bfe24755-0d7a-4bed-96e0-b3718d7a0fa8",
+            "tableName": "n8n_chat_histories_testing",
+            "sessionIdKey": "sessionId",
+            "userMessageKey": "chatInput",
+            "replyKey": "output"
         }
     ]
 }
