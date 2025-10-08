@@ -11,16 +11,6 @@
             "updated_at": "2025-10-07T19:53:58.014175"
         },
         {
-            "id": "c04211dd-2f23-4a5e-b409-39039081b503",
-            "user_id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
-            "session_id": "6a219718-4e60-4705-9035-29131cae7ea7",
-            "title": "Chat-2 (Oct 8, 12:46)",
-            "table_name": "n8n_chat_histories",
-            "webhook_id": "eacc1407-921b-47c6-ad77-230d48315070",
-            "created_at": "2025-10-08T12:46:13.750844",
-            "updated_at": "2025-10-08T12:46:18.684232"
-        },
-        {
             "id": "352532e0-9e95-4ce2-91be-589a97cae9b0",
             "user_id": "ffe93ecb-23cb-4ad5-b587-aac083dc31e6",
             "session_id": "2698f415-3046-4f79-b120-2f5a419014a3",
@@ -41,14 +31,14 @@
             "updated_at": "2025-10-08T14:38:11.732078"
         },
         {
-            "id": "6c9c5cbc-4b5d-4491-afe8-67f210628849",
+            "id": "56442073-626e-4a39-8948-20891fda058f",
             "user_id": "6c2e680c-b908-48c4-8bba-921d47db40cd",
-            "session_id": "df155531-7872-41b3-8fe3-8c91240ebe23",
-            "title": "Storable-class ai-2 (Oct 8, 14:38)",
+            "session_id": "4e3a6711-4fd6-461a-9445-102330a1aeba",
+            "title": "Storable-class ai-1 (Oct 8, 16:50)",
             "table_name": "n8n_chat_histories",
             "webhook_id": "465a11eb-d6fe-4388-bb4f-58bcb5d1e463",
-            "created_at": "2025-10-08T14:38:55.101105",
-            "updated_at": "2025-10-08T14:38:55.101115"
+            "created_at": "2025-10-08T16:50:50.110290",
+            "updated_at": "2025-10-08T16:50:52.767427"
         }
     ]
 }

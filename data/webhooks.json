@@ -12,7 +12,7 @@
         {
             "id": "144d8b1d-ab67-4fd2-b6ba-4c058565add7",
             "name": "Custom-opcode ai",
-            "url": "http://192.168.64.5:5678/webhook-test/bfe24755-0d7a-4bed-96e0-b3718d7a0fa8",
+            "url": "http://192.168.64.5:5678/webhook/bfe24755-0d7a-4bed-96e0-b3718d7a0fa8",
             "tableName": "n8n_chat_histories_testing",
             "sessionIdKey": "sessionId",
             "userMessageKey": "chatInput",
